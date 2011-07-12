@@ -20,12 +20,14 @@ public class GroceryProvider extends ContentProvider {
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_TEXT = "Item";
 	public static final String KEY_CHECKED = "Checked";
+	public static final String KEY_LIST = "List";
 	public static final Uri CONTENT_URI =
         Uri.parse("content://net.sroz.grocerylist/item");
 	static final String[] ITEM_QUERY_COLUMNS = {
 		KEY_ROWID,
 		KEY_TEXT,
-		KEY_CHECKED
+		KEY_CHECKED,
+		KEY_LIST
 	};
 	public static final String DEFAULT_SORT_ORDER =
 		KEY_TEXT + " ASC";
@@ -34,13 +36,14 @@ public class GroceryProvider extends ContentProvider {
 	
 	public static final String DATABASE_NAME = "GroceryList.db";
 	public static final String DATABASE_TABLE = "tblGroceries";
-	public static final int DATABASE_VERSION = 1;
+	public static final int DATABASE_VERSION = 2;
 	
 	private static final String DATABASE_CREATE =
 		"create table tblGroceries ("
 		+ KEY_ROWID + " integer primary key autoincrement, "
 		+ KEY_TEXT + " text not null, "
 		+ KEY_CHECKED + " integer not null, "
+		+ KEY_LIST + " text not null"
 		+ ");";
 	
 	private DatabaseHelper DBHelper;
@@ -131,8 +134,12 @@ public class GroceryProvider extends ContentProvider {
 		if (!values.containsKey(KEY_TEXT))
 			throw new IllegalArgumentException("Missing required key: KEY_ITEM");
 		
+		if (!values.containsKey(KEY_LIST))
+			throw new IllegalArgumentException("Missing required key: KEY_LIST");
+		
 		if (!values.containsKey(KEY_CHECKED))
 			values.put(KEY_CHECKED, false); // New items are created unchecked
+		
 		
 		SQLiteDatabase db = DBHelper.getWritableDatabase();
 		long rowId = db.insert(DATABASE_TABLE, null, values);
