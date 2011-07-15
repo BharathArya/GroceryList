@@ -50,7 +50,7 @@ public class GroceryListActivity extends Activity {
         lvItems = (ListView)findViewById(R.id.lvItems);
         
         mFactory = LayoutInflater.from(this);
-        mCursor = getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEM_QUERY_COLUMNS, null, null, GroceryProvider.DEFAULT_SORT_ORDER);
+        mCursor = getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEMS_QUERY_COLUMNS, null, null, GroceryProvider.DEFAULT_SORT_ORDER);
         
         lvItems.setAdapter(new GroceryListAdapter(this, mCursor));
     	lvItems.setOnItemClickListener(new OnItemClickListener() {
@@ -164,7 +164,7 @@ public class GroceryListActivity extends Activity {
 	
 	public static GroceryItem get_item(ContentResolver resolver, long id) {
 		Uri uri = ContentUris.withAppendedId(GroceryProvider.CONTENT_URI, id);
-		Cursor c = resolver.query(uri, GroceryProvider.ITEM_QUERY_COLUMNS, null, null, null);
+		Cursor c = resolver.query(uri, GroceryProvider.ITEMS_QUERY_COLUMNS, null, null, null);
 		GroceryItem item = null;
 		if (c != null) {
 			if (c.moveToFirst()) {
@@ -204,7 +204,7 @@ public class GroceryListActivity extends Activity {
 	private static GroceryItem find_item(Context c, String text) {
 		GroceryItem item = null;
 		Cursor cursor = null;
-		cursor = c.getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEM_QUERY_COLUMNS, GroceryProvider.KEY_TEXT+"=?", new String[] {text}, null);
+		cursor = c.getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEMS_QUERY_COLUMNS, GroceryProvider.KEY_TEXT+"=?", new String[] {text}, null);
 		if (cursor != null) {
 			if (cursor.moveToFirst()) {
 				cursor.moveToFirst();
