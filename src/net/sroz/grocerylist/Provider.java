@@ -13,7 +13,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-public class GroceryProvider extends ContentProvider {
+public class Provider extends ContentProvider {
 	private static final int ITEMS = 1;
 	private static final int ITEMS_ID = 2;
 	private static final int LISTS = 3;
@@ -113,7 +113,7 @@ public class GroceryProvider extends ContentProvider {
 		}
 	}
 	
-	public GroceryProvider() {
+	public Provider() {
 		// Nothing to do
 	}
 	

@@ -30,7 +30,7 @@ import android.view.View.OnKeyListener;
 import android.view.ViewGroup;
 
 
-public class GroceryListActivity extends Activity {
+public class CurrentListActivity extends Activity {
 	AutoCompleteTextView tvNewItem;
 	Button btnAddItem;
 	ListView lvItems;
@@ -50,27 +50,27 @@ public class GroceryListActivity extends Activity {
         lvItems = (ListView)findViewById(R.id.lvItems);
         
         mFactory = LayoutInflater.from(this);
-        mCursor = getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEMS_QUERY_COLUMNS, null, null, GroceryProvider.DEFAULT_SORT_ORDER);
+        mCursor = getContentResolver().query(Provider.CONTENT_URI, Provider.ITEMS_QUERY_COLUMNS, null, null, Provider.DEFAULT_SORT_ORDER);
         
         lvItems.setAdapter(new GroceryListAdapter(this, mCursor));
     	lvItems.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				CheckedTextView cv = (CheckedTextView) view;
 				boolean isChecked = !cv.isChecked();
-				GroceryListActivity.toggle_item(getApplicationContext(), id, isChecked);
+				CurrentListActivity.toggle_item(getApplicationContext(), id, isChecked);
 			}
 		});
     	lvItems.setOnItemLongClickListener(new OnItemLongClickListener() {
 			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
 				/* TODO Show context menu on long click */
-				GroceryListActivity.delete_item(getApplicationContext(), id);
+				CurrentListActivity.delete_item(getApplicationContext(), id);
 				return true;
 			}
     	});
         
         btnAddItem.setOnClickListener(new OnClickListener() {
     		public void onClick(View v) {
-    			GroceryListActivity.add_item(getApplicationContext(), tvNewItem.getText().toString());
+    			CurrentListActivity.add_item(getApplicationContext(), tvNewItem.getText().toString());
     			tvNewItem.setText("");
     		}
         });
@@ -79,7 +79,7 @@ public class GroceryListActivity extends Activity {
 			public boolean onKey(View v, int keyCode, KeyEvent event) {
 				if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_UP) {
 					// XXX This should be moved to it's own method in the Activity
-	    			GroceryListActivity.add_item(getApplicationContext(), tvNewItem.getText().toString());
+	    			CurrentListActivity.add_item(getApplicationContext(), tvNewItem.getText().toString());
 	    			tvNewItem.setText("");
 					return true;
 				}
@@ -96,7 +96,7 @@ public class GroceryListActivity extends Activity {
     
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-    	boolean haveItems = (GroceryListActivity.get_item_count(getApplicationContext()) > 0);
+    	boolean haveItems = (CurrentListActivity.get_item_count(getApplicationContext()) > 0);
 		menu.findItem(R.id.checkout).setEnabled(haveItems);
 		menu.findItem(R.id.clear).setEnabled(haveItems);
     	menu.findItem(R.id.settings).setEnabled(false);
@@ -155,20 +155,20 @@ public class GroceryListActivity extends Activity {
 
 		@Override
 		public void bindView(View view, Context context, Cursor cursor) {
-			final GroceryItem item = new GroceryItem(cursor);
+			final Item item = new Item(cursor);
 			CheckedTextView cv = (CheckedTextView) view;
 			cv.setText(item.text);
 			cv.setChecked(item.checked);
 		}
 	}
 	
-	public static GroceryItem get_item(ContentResolver resolver, long id) {
-		Uri uri = ContentUris.withAppendedId(GroceryProvider.CONTENT_URI, id);
-		Cursor c = resolver.query(uri, GroceryProvider.ITEMS_QUERY_COLUMNS, null, null, null);
-		GroceryItem item = null;
+	public static Item get_item(ContentResolver resolver, long id) {
+		Uri uri = ContentUris.withAppendedId(Provider.CONTENT_URI, id);
+		Cursor c = resolver.query(uri, Provider.ITEMS_QUERY_COLUMNS, null, null, null);
+		Item item = null;
 		if (c != null) {
 			if (c.moveToFirst()) {
-				item = new GroceryItem(c);
+				item = new Item(c);
 			}
 			c.close();
 		}
@@ -178,7 +178,7 @@ public class GroceryListActivity extends Activity {
     public static int get_item_count(Context c) {
 		Cursor cursor = null;
 		int count = 0;
-		cursor = c.getContentResolver().query(GroceryProvider.CONTENT_URI, new String[] {"COUNT(_ID) as count"}, null, null, null);
+		cursor = c.getContentResolver().query(Provider.CONTENT_URI, new String[] {"COUNT(_ID) as count"}, null, null, null);
 		if (cursor != null) {
 			if (cursor.moveToFirst()) {
 				cursor.moveToFirst();
@@ -191,47 +191,47 @@ public class GroceryListActivity extends Activity {
 	public static void add_item(Context c, String text) {
 		if (TextUtils.isEmpty(text))
 			return;
-		GroceryItem item = find_item(c, text);
+		Item item = find_item(c, text);
 		if (item != null) {
 			Toast.makeText(c, "Item already in list", Toast.LENGTH_SHORT).show();
 			return;
 		}
 		ContentValues values = new ContentValues(1);
-		values.put(GroceryProvider.KEY_TEXT, text);
-		c.getContentResolver().insert(GroceryProvider.CONTENT_URI, values);	
+		values.put(Provider.KEY_TEXT, text);
+		c.getContentResolver().insert(Provider.CONTENT_URI, values);	
 	}
 
-	private static GroceryItem find_item(Context c, String text) {
-		GroceryItem item = null;
+	private static Item find_item(Context c, String text) {
+		Item item = null;
 		Cursor cursor = null;
-		cursor = c.getContentResolver().query(GroceryProvider.CONTENT_URI, GroceryProvider.ITEMS_QUERY_COLUMNS, GroceryProvider.KEY_TEXT+"=?", new String[] {text}, null);
+		cursor = c.getContentResolver().query(Provider.CONTENT_URI, Provider.ITEMS_QUERY_COLUMNS, Provider.KEY_TEXT+"=?", new String[] {text}, null);
 		if (cursor != null) {
 			if (cursor.moveToFirst()) {
 				cursor.moveToFirst();
-				item = new GroceryItem(cursor);
+				item = new Item(cursor);
 			}
 		}
 		return item;
 	}
 
 	public static void delete_item(Context c, long id) {
-		Uri uri = ContentUris.withAppendedId(GroceryProvider.CONTENT_URI, id);
+		Uri uri = ContentUris.withAppendedId(Provider.CONTENT_URI, id);
 		c.getContentResolver().delete(uri, null, null);
 	}
 	
 	public static void delete_all_items(Context c) {
-		c.getContentResolver().delete(GroceryProvider.CONTENT_URI, null, null);
+		c.getContentResolver().delete(Provider.CONTENT_URI, null, null);
 	}
 	
 	public static void delete_checked_items(Context c) {
-		c.getContentResolver().delete(GroceryProvider.CONTENT_URI, GroceryProvider.KEY_CHECKED + "=?", new String[] {Integer.toString(1)});
+		c.getContentResolver().delete(Provider.CONTENT_URI, Provider.KEY_CHECKED + "=?", new String[] {Integer.toString(1)});
 	}
 
 	public static void toggle_item(Context c, long id, boolean isChecked) {
 		ContentValues values = new ContentValues(1);
-		values.put(GroceryProvider.KEY_CHECKED, isChecked ? 1 : 0);
+		values.put(Provider.KEY_CHECKED, isChecked ? 1 : 0);
 		
-		Uri uri = ContentUris.withAppendedId(GroceryProvider.CONTENT_URI, id);
+		Uri uri = ContentUris.withAppendedId(Provider.CONTENT_URI, id);
 		c.getContentResolver().update(uri, values, null, null);
 	}
 	
