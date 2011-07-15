@@ -35,6 +35,7 @@ public class CurrentListActivity extends Activity {
 	Button btnAddItem;
 	ListView lvItems;
 	LayoutInflater mFactory;
+	List current_list; 
 	Cursor mCursor;
 	
 	static final int DIALOG_LIST_ID = 0;
@@ -44,6 +45,8 @@ public class CurrentListActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+        
+        current_list = get_last_list();
         
         tvNewItem = (AutoCompleteTextView)findViewById(R.id.tvNewItem);
         btnAddItem = (Button)findViewById(R.id.btnAddItem);
@@ -234,6 +237,21 @@ public class CurrentListActivity extends Activity {
 		Uri uri = ContentUris.withAppendedId(Provider.CONTENT_URI, id);
 		c.getContentResolver().update(uri, values, null, null);
 	}
+
+	public static List get_list(long id) {
+		List list = null;
+		
+		return list;
+	}
 	
+	public static List get_last_list() {
+		Long id = 0l;
+		List list = null;
+	
+		//TODO: Figure out how to use settings to get last list_id
+		list = get_list(id);
+		
+		return list;
+	}
 
 }
