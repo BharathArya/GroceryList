@@ -16,17 +16,24 @@ import android.util.Log;
 public class GroceryProvider extends ContentProvider {
 	private static final int ITEMS = 1;
 	private static final int ITEMS_ID = 2;
+	private static final int LISTS = 3;
+	private static final int LISTS_ID = 4;
 	
 	public static final String KEY_ROWID = "_id";
 	public static final String KEY_TEXT = "Item";
 	public static final String KEY_CHECKED = "Checked";
+	public static final String KEY_LIST_ID = "List_id";
 	public static final String KEY_LIST = "List";
 	public static final Uri CONTENT_URI =
         Uri.parse("content://net.sroz.grocerylist/item");
-	static final String[] ITEM_QUERY_COLUMNS = {
+	static final String[] ITEMS_QUERY_COLUMNS = {
 		KEY_ROWID,
 		KEY_TEXT,
 		KEY_CHECKED,
+		KEY_LIST_ID
+	};
+	static final String[] LISTS_QUERY_COLUMS = {
+		KEY_ROWID,
 		KEY_LIST
 	};
 	public static final String DEFAULT_SORT_ORDER =
@@ -35,16 +42,23 @@ public class GroceryProvider extends ContentProvider {
 	private static final String TAG = "GroceryList";
 	
 	public static final String DATABASE_NAME = "GroceryList.db";
-	public static final String DATABASE_TABLE = "tblGroceries";
+	public static final String DATABASE_ITEMS_TABLE = "tblItems";
+	public static final String DATABASE_LISTS_TABLE = "tblLists";
 	public static final int DATABASE_VERSION = 2;
 	
 	private static final String DATABASE_CREATE =
-		"create table tblGroceries ("
-		+ KEY_ROWID + " integer primary key autoincrement, "
-		+ KEY_TEXT + " text not null, "
-		+ KEY_CHECKED + " integer not null, "
-		+ KEY_LIST + " text not null"
-		+ ");";
+		"CREATE TABLE " + DATABASE_ITEMS_TABLE + " ("
+		+ KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+		+ KEY_TEXT + " TEXT NOT NULL, "
+		+ KEY_CHECKED + " INTEGER NOT NULL, "
+		+ KEY_LIST_ID + " INTEGER NOT NULL"
+		+ ");"
+		+ "CREATE TABLE " + DATABASE_LISTS_TABLE + "("
+		+ KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+		+ KEY_LIST + " TEXT NOT NULL"
+		+ ");"
+		+ "INSERT INTO " + DATABASE_LISTS_TABLE
+		+ " (" + KEY_LIST + ") VALUES ('Groceries');";
 	
 	private DatabaseHelper DBHelper;
 	private static final UriMatcher sURLMatcher = new UriMatcher(UriMatcher.NO_MATCH);
@@ -52,6 +66,8 @@ public class GroceryProvider extends ContentProvider {
 	static {
 		sURLMatcher.addURI("net.sroz.grocerylist", "item", ITEMS);
 		sURLMatcher.addURI("net.sroz.grocerylist", "item/#", ITEMS_ID);
+		sURLMatcher.addURI("net.sroz.grocerylist", "list", LISTS);
+		sURLMatcher.addURI("net.sroz.grocerylist", "list/#", LISTS_ID);
 	}
 	
 	private static class DatabaseHelper extends SQLiteOpenHelper {
@@ -66,9 +82,34 @@ public class GroceryProvider extends ContentProvider {
 		
 		@Override
 		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", which will destroy all old data");
-			db.execSQL("DROP TABLE IF EXISTS tblGroceries;");
-			onCreate(db);
+			Log.w(TAG, "Upgrading database from version " + oldVersion + " to " + newVersion + ", attempting lossless upgrade...");
+			int curVersion = oldVersion;
+			while (curVersion < newVersion) {
+				switch (curVersion) {
+					case 1:
+						try {
+							onCreate(db);
+							db.execSQL("ALTER TABLE tblGroceries ADD COLUMN " + KEY_LIST_ID + " DEFAULT 0");
+							db.execSQL("INSERT INTO " + DATABASE_ITEMS_TABLE + " SELECT * FROM tblGroceries");
+							db.execSQL("DROP TABLE tblGroceries");
+						} catch(Exception e) {
+							db.execSQL(
+									"DROP TABLE IF EXISTS tblItems;"
+									+ "DROP TABLE IF EXISTS tblLists;"
+									+ "DROP TABLE IF EXISTS tblGroeries;"
+									);
+							onCreate(db);
+						}
+						break;
+					default:
+						Log.e(TAG, "Unexpected database version number (" + curVersion +")");
+						Log.w(TAG, "Unable to upgrade database to version " + curVersion + ": Destroying previous data");
+						db.execSQL("select 'drop table ' || name || ';' from sqlite_master where type = 'table';");
+						onCreate(db);
+						break;
+				}
+				curVersion++;
+			}
 		}
 	}
 	
@@ -85,7 +126,7 @@ public class GroceryProvider extends ContentProvider {
 		switch (sURLMatcher.match(uri)) {
 			case ITEMS:
 				// Delete whatever the caller has selected
-				count = db.delete(DATABASE_TABLE, selection, selectionArgs);
+				count = db.delete(DATABASE_ITEMS_TABLE, selection, selectionArgs);
 				break;
 			case ITEMS_ID:
 				// Delete a specific ID
@@ -97,7 +138,7 @@ public class GroceryProvider extends ContentProvider {
 					// And include whatever selection the caller gave
 					selection = KEY_ROWID + "=" + rowId + " AND (" + selection + ")";
 				}
-				count = db.delete(DATABASE_TABLE, selection, selectionArgs);
+				count = db.delete(DATABASE_ITEMS_TABLE, selection, selectionArgs);
 				break;
 			default:
 				throw new IllegalArgumentException("Cannot delete from URI: " + uri);
@@ -142,7 +183,7 @@ public class GroceryProvider extends ContentProvider {
 		
 		
 		SQLiteDatabase db = DBHelper.getWritableDatabase();
-		long rowId = db.insert(DATABASE_TABLE, null, values);
+		long rowId = db.insert(DATABASE_ITEMS_TABLE, null, values);
 		if (rowId < 0)
 			throw new SQLException("Failed to insert row into " + uri);
 		Uri newUri = ContentUris.withAppendedId(CONTENT_URI, rowId);
@@ -180,7 +221,7 @@ public class GroceryProvider extends ContentProvider {
 			default:
 				throw new IllegalArgumentException("Cannot delete from URI: " + uri);
 		}
-		cursor = db.query(DATABASE_TABLE, projection, selection, selectionArgs, null, null, null);
+		cursor = db.query(DATABASE_ITEMS_TABLE, projection, selection, selectionArgs, null, null, null);
 		if (cursor != null) {
 			cursor.setNotificationUri(getContext().getContentResolver(), uri);
 		}
@@ -198,7 +239,7 @@ public class GroceryProvider extends ContentProvider {
 			case ITEMS_ID:
 				segment = uri.getPathSegments().get(1);
 				rowId = Long.parseLong(segment);
-				count = db.update(DATABASE_TABLE, values, KEY_ROWID + "=?", new String[] {Long.toString(rowId)});
+				count = db.update(DATABASE_ITEMS_TABLE, values, KEY_ROWID + "=?", new String[] {Long.toString(rowId)});
 				break;
 			default:
 				throw new UnsupportedOperationException("Cannot update URI: " + uri);
