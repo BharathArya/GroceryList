@@ -3,4 +3,5 @@
     <item android:id="@+id/checkout" android:title="@string/checkout"></item>
     <item android:id="@+id/clear" android:title="@string/clear"></item>
     <item android:id="@+id/settings" android:title="@string/settings"></item>
+    <item android:id="@+id/list" android:title="@string/list"></item>
 </menu>

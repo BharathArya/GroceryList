@@ -2,6 +2,7 @@ package net.sroz.grocerylist;
 
 import net.sroz.grocerylist.R;
 import android.app.Activity;
+import android.app.Dialog;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -35,6 +36,8 @@ public class GroceryListActivity extends Activity {
 	ListView lvItems;
 	LayoutInflater mFactory;
 	Cursor mCursor;
+	
+	static final int DIALOG_LIST_ID = 0;
 	
     /** Called when the activity is first created. */
     @Override
@@ -117,10 +120,26 @@ public class GroceryListActivity extends Activity {
 	    		Toast.makeText(getApplicationContext(), "Not yet implemented", Toast.LENGTH_SHORT).show();
 	    		ret = true;
 	    		break;
+	    	case R.id.list:
+	    		showDialog(DIALOG_LIST_ID);
+	    		break;
     		default:
     			ret = super.onOptionsItemSelected(item);
     	}
     	return ret;
+    }
+    
+    @Override
+    public Dialog onCreateDialog(int id) {
+    	Dialog dialog = null;
+    	switch (id) {
+    		case DIALOG_LIST_ID:
+    			//TODO: Build list selection dialog
+    			break;
+    		default:
+    			break;
+    	}
+    	return dialog;
     }
     
     
