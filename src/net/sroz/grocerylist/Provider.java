@@ -64,10 +64,10 @@ public class Provider extends ContentProvider {
 	private static final UriMatcher sURLMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 	
 	static {
-		sURLMatcher.addURI("net.sroz.grocerylist", "item", ITEMS);
-		sURLMatcher.addURI("net.sroz.grocerylist", "item/#", ITEMS_ID);
 		sURLMatcher.addURI("net.sroz.grocerylist", "list", LISTS);
 		sURLMatcher.addURI("net.sroz.grocerylist", "list/#", LISTS_ID);
+		sURLMatcher.addURI("net.sroz.grocerylist", "list/#/item", ITEMS);
+		sURLMatcher.addURI("net.sroz.grocerylist", "list/#/item/#", ITEMS_ID);
 	}
 	
 	private static class DatabaseHelper extends SQLiteOpenHelper {
@@ -121,7 +121,8 @@ public class Provider extends ContentProvider {
 	public int delete(Uri uri, String selection, String[] selectionArgs) {
 		SQLiteDatabase db = DBHelper.getWritableDatabase();
 		int count = 0;
-		long rowId = 0;
+		long item_id = 0;
+		long list_id = 0;
 		String segment = "";
 		switch (sURLMatcher.match(uri)) {
 			case ITEMS:
@@ -129,16 +130,30 @@ public class Provider extends ContentProvider {
 				count = db.delete(DATABASE_ITEMS_TABLE, selection, selectionArgs);
 				break;
 			case ITEMS_ID:
-				// Delete a specific ID
 				segment = uri.getPathSegments().get(1);
-				rowId = Long.parseLong(segment);
+				item_id = Long.parseLong(segment);
+				segment = uri.getPathSegments().get(3);
+				item_id = Long.parseLong(segment);
 				if (TextUtils.isEmpty(selection)) {
-					selection = KEY_ROWID + "=" + rowId;
+					selection = KEY_ROWID + "=" + item_id + " AND " + KEY_LIST_ID + "=" + list_id;
 				} else {
-					// And include whatever selection the caller gave
-					selection = KEY_ROWID + "=" + rowId + " AND (" + selection + ")";
+					selection = KEY_ROWID + "=" + item_id + " AND " + KEY_LIST_ID + "=" + list_id + " AND (" + selection + ")";
 				}
 				count = db.delete(DATABASE_ITEMS_TABLE, selection, selectionArgs);
+				break;
+			case LISTS:
+				count = db.delete(DATABASE_LISTS_TABLE, selection, selectionArgs);
+				break;
+			case LISTS_ID:
+				segment = uri.getPathSegments().get(1);
+				list_id = Long.parseLong(segment);
+				
+				if (TextUtils.isEmpty(selection)) {
+					selection = KEY_LIST_ID + "=" + list_id;
+				} else {
+					selection += KEY_LIST_ID + "=" + list_id + " AND (" + selection + ")";
+				}
+				count = db.delete(DATABASE_LISTS_TABLE, selection, selectionArgs);
 				break;
 			default:
 				throw new IllegalArgumentException("Cannot delete from URI: " + uri);
@@ -155,6 +170,10 @@ public class Provider extends ContentProvider {
 				return "vnd.sroz.cursor.dir/items";
 			case ITEMS_ID:
 				return "vnd.sroz.cursor.item/items";
+			case LISTS:
+				return "vnd.sroz.cursor.dir/lists";
+			case LISTS_ID:
+				return "vnd.sroz.cursor.item/lists";
 			default:
 				throw new IllegalArgumentException("Unknown URI");
 		}
