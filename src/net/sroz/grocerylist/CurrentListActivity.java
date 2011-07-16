@@ -46,16 +46,14 @@ public class CurrentListActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
         
-        current_list = get_last_list();
-        
         tvNewItem = (AutoCompleteTextView)findViewById(R.id.tvNewItem);
         btnAddItem = (Button)findViewById(R.id.btnAddItem);
         lvItems = (ListView)findViewById(R.id.lvItems);
         
         mFactory = LayoutInflater.from(this);
-        mCursor = getContentResolver().query(Provider.CONTENT_URI, Provider.ITEMS_QUERY_COLUMNS, null, null, Provider.DEFAULT_SORT_ORDER);
         
-        lvItems.setAdapter(new GroceryListAdapter(this, mCursor));
+        set_current_list(get_last_list());
+        
     	lvItems.setOnItemClickListener(new OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 				CheckedTextView cv = (CheckedTextView) view;
@@ -241,6 +239,8 @@ public class CurrentListActivity extends Activity {
 	public static List get_list(long id) {
 		List list = null;
 		
+		
+		
 		return list;
 	}
 	
@@ -252,6 +252,12 @@ public class CurrentListActivity extends Activity {
 		list = get_list(id);
 		
 		return list;
+	}
+	
+	public void set_current_list(List list) {
+		current_list = list;
+		mCursor = getContentResolver().query(Provider.CONTENT_URI, Provider.ITEMS_QUERY_COLUMNS, Provider.KEY_LIST_ID + "=?", new String[] {Long.toString(list.id)}, Provider.DEFAULT_SORT_ORDER);
+        lvItems.setAdapter(new GroceryListAdapter(this, mCursor));
 	}
 
 }
